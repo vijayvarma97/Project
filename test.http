@@ -1,0 +1,64 @@
+### Variables
+@service = http://localhost:4004/odata/v4/project
+@projectID = 3733a360-1234-1234-1234-1234567890ad
+
+### ------------------------------------------------------------------------
+### 1. Create Project with Flat Tasks (2-Level Hierarchy)
+### ------------------------------------------------------------------------
+POST {{service}}/Projects
+Content-Type: application/json
+
+{
+    "ID": "{{projectID}}",
+    "title": "S/4HANA Migration",
+    "description": "Global rollout of S/4HANA Cloud",
+    "startDate": "2025-02-01",
+    "endDate": "2026-04-01",
+    "status": "Active",
+    "tasks": [
+        {
+            "title": "Kick-off Meeting",
+            "startDate": "2025-02-01T09:00:00Z",
+            "endDate": "2025-02-01T10:00:00Z",
+            "progress": 100,
+            "isMilestone": true
+            // NO 'children' here. It's a direct child of the Project.
+        },
+        {
+            "title": "System Assessment",
+            "startDate": "2025-02-02T08:00:00Z",
+            "endDate": "2025-02-15T17:00:00Z",
+            "progress": 80,
+            "isMilestone": false
+        },
+        {
+            "title": "Data Migration",
+            "startDate": "2025-03-05T08:00:00Z",
+            "endDate": "2025-04-01T17:00:00Z",
+            "progress": 40,
+            "isMilestone": false
+        },
+        {
+            "title": "User Training",
+            "startDate": "2025-05-01T08:00:00Z",
+            "endDate": "2025-05-15T17:00:00Z",
+            "progress": 0,
+            "isMilestone": false
+        }
+    ]
+}
+
+### ------------------------------------------------------------------------
+### 2. Activate
+### ------------------------------------------------------------------------
+POST {{service}}/Projects(ID={{projectID}},IsActiveEntity=false)/ProjectService.draftActivate
+Content-Type: application/json
+
+{}
+
+### ------------------------------------------------------------------------
+### 3. Verify Hierarchy View
+### ------------------------------------------------------------------------
+GET {{service}}/HierarchyNodes
+    ?$select=ID,title,parent_ID,type
+    &$orderby=startDate asc

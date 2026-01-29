@@ -1,0 +1,1 @@
+using ProjectService as service from '../../srv/schema';

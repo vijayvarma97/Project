@@ -1,0 +1,7 @@
+ID,project_ID,employee_ID,role
+team-001,proj-001,emp-002,Project Manager
+team-002,proj-001,emp-001,Lead Developer
+team-003,proj-001,emp-004,Frontend Developer
+team-004,proj-002,emp-005,DevOps Lead
+team-005,proj-003,emp-003,Lead Designer
+team-006,proj-003,emp-002,Project Supervisor
