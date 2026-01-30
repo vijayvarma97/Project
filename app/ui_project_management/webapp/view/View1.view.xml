@@ -72,39 +72,66 @@
                 <Title text="Project Hierarchy (WBS)" level="H2" class="sapUiSmallMarginBottom"/>
                 
                 <t:TreeTable
-                    id="TreeTable"
-                    selectionMode="Single"
-                    rows="{
-                        path: '/HierarchyNodes',
-                        parameters: {
-                            $count: true,
-                            $$ownRequest: true,
-                            $orderby: 'startDate asc'
-                        }
-                    }">
-                    <t:columns>
-                        <t:Column label="WBS Structure" width="20rem">
-                            <t:template>
-                                <HBox>
-                                    <core:Icon 
-                                        src="{= ${type} === 'Project' ? 'sap-icon://product' : 'sap-icon://task'}" 
-                                        color="{= ${type} === 'Project' ? '#0070b4' : '#6a6d70' }"
-                                        class="sapUiTinyMarginEnd"/>
-                                    <Text text="{title}" design="{= ${type} === 'Project' ? 'Bold' : 'Standard'}"/>
-                                </HBox>
-                            </t:template>
-                        </t:Column>
-                        <t:Column label="Start Date">
-                            <t:template><Text text="{startDate}"/></t:template>
-                        </t:Column>
-                         <t:Column label="End Date">
-                            <t:template><Text text="{endDate}"/></t:template>
-                        </t:Column>
-                        <t:Column label="Status / Progress">
-                            <t:template><Text text="{statusOrProgress}"/></t:template>
-                        </t:Column>
-                    </t:columns>
-                </t:TreeTable>
+    id="TreeTable"
+    selectionMode="Single"
+    rows="{
+        path: 'ganttModel>/root',
+        parameters: {
+            arrayNames: ['children']
+        }
+    }">
+    <t:columns>
+    <t:Column label="WBS Structure" width="20rem">
+        <t:template>
+            <HBox>
+                <core:Icon 
+                    src="{= ${ganttModel>type} === 'Project' ? 'sap-icon://product' : 'sap-icon://task'}" 
+                    color="{= ${ganttModel>type} === 'Project' ? '#0070b4' : '#6a6d70' }"
+                    class="sapUiTinyMarginEnd"/>
+                <Text text="{ganttModel>title}" design="{= ${ganttModel>type} === 'Project' ? 'Bold' : 'Standard'}"/>
+            </HBox>
+        </t:template>
+    </t:Column>
+
+    <t:Column label="Start Date">
+        <t:template>
+            <Text text="{ganttModel>startDate}"/>
+        </t:template>
+    </t:Column>
+
+    <t:Column label="End Date">
+        <t:template>
+            <Text text="{ganttModel>endDate}"/>
+        </t:template>
+    </t:Column>
+
+    <t:Column label="Status / Progress">
+        <t:template>
+            <Text text="{ganttModel>statusOrProgress}"/>
+        </t:template>
+    </t:Column>
+</t:columns>
+
+    <t:rowSettingsTemplate>
+        <gantt:GanttRowSettings>
+            <gantt:shapes1>
+                <gantt:BaseChevron 
+                    time="{startDate}" 
+                    endTime="{endDate}" 
+                    title="{title}"
+                    fill="#0070b4"
+                    visible="{= ${type} === 'Project' }"/>
+
+                <gantt:BaseRectangle 
+                    time="{startDate}" 
+                    endTime="{endDate}" 
+                    title="{title}"
+                    fill="#759421"
+                    visible="{= ${type} === 'Task' }"/>
+            </gantt:shapes1>
+        </gantt:GanttRowSettings>
+    </t:rowSettingsTemplate>
+</t:TreeTable>
 
                 <Toolbar class="sapUiSmallMarginTop"/>
 
