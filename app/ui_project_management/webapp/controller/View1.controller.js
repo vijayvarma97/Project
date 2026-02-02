@@ -1,11 +1,22 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageToast",
+    "sap/m/MessageBox",             // <--- 3. Loaded here
     "sap/ui/core/Fragment",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
-    "sap/ui/model/json/JSONModel"
-], function (Controller, MessageToast, Fragment, Filter, FilterOperator, JSONModel) {
+    "sap/ui/model/json/JSONModel",
+    "sap/ui/core/format/DateFormat"
+], function (
+    Controller, 
+    MessageToast, 
+    MessageBox,                     // <--- 3. Assigned here (MUST MATCH)
+    Fragment, 
+    Filter, 
+    FilterOperator, 
+    JSONModel, 
+    DateFormat
+) {
     "use strict";
 
     return Controller.extend("uiprojectmanagement.controller.View1", {
@@ -324,6 +335,168 @@ sap.ui.define([
 
             }.bind(this)).catch(function(oError) {
                 console.error("Failed to load employees:", oError);
+            });
+        },
+        onCreateTask: function() {
+            // --- FIX: Define oView here ---
+            var oView = this.getView();
+            // ------------------------------
+
+            // 1. Get Selected Node
+            // Use the safe way to get the table from the chart
+            var oGanttChart = this.byId("ganttChart");
+            var oGanttTable = oGanttChart.getTable(); 
+            var aSelectedIndices = oGanttTable.getSelectedIndices();
+
+            if (aSelectedIndices.length === 0) {
+                MessageToast.show("Please select a Project or Parent Task first.");
+                return;
+            }
+
+            var oContext = oGanttTable.getContextByIndex(aSelectedIndices[0]);
+            var oSelectedNode = oContext.getObject();
+            
+            // 2. Prepare Data for the new task
+            var oNewTaskData = {
+                title: "",
+                startDate: null,
+                endDate: null,
+                parent_ID: null,
+                project_ID: null
+            };
+
+            // Logic: Determine Parent and Project IDs
+            if (oSelectedNode.type === "Project") {
+                // Adding directly to a Project (Root Task)
+                oNewTaskData.project_ID = oSelectedNode.ID;
+                oNewTaskData.parent_ID = null; 
+            } else {
+                // Adding a Sub-Task
+                oNewTaskData.project_ID = oSelectedNode.project_ID;
+                oNewTaskData.parent_ID = oSelectedNode.ID;
+            }
+
+            // 3. Create a temporary JSON model for the Dialog inputs
+            var oTaskModel = new JSONModel(oNewTaskData);
+            this.getView().setModel(oTaskModel, "newTask");
+
+            // 4. Open Dialog
+            if (!this._pCreateTaskDialog) {
+                this._pCreateTaskDialog = Fragment.load({
+                    id: oView.getId(), // Now oView is defined!
+                    name: "uiprojectmanagement.view.CreateTask",
+                    controller: this
+                }).then(function(oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pCreateTaskDialog.then(function(oDialog) {
+                oDialog.open();
+            });
+        },
+        onSaveNewTask: function() {
+            var oModel = this.getView().getModel("newTask");
+            var oData = oModel.getData();
+
+            if (!oData.title || !oData.startDate || !oData.endDate) {
+                sap.m.MessageToast.show("Please fill all fields.");
+                return;
+            }
+
+            // Convert Date Strings ("2026-02-01") to ISO DateTime for Backend
+            var sISOStart = oData.startDate + "T09:00:00Z";
+            var sISOEnd = oData.endDate + "T17:00:00Z";
+
+            var oODataModel = this.getOwnerComponent().getModel();
+            var oListBinding = oODataModel.bindList("/Tasks");
+
+            try {
+                var oContext = oListBinding.create({
+                    title: oData.title,
+                    startDate: sISOStart, 
+                    endDate: sISOEnd,
+                    project_ID: oData.project_ID,
+                    parent_ID: oData.parent_ID,
+                    // REMOVED "status": "Planning" because it doesn't exist in the DB
+                    progress: 0
+                });
+
+                oContext.created().then(function() {
+                    sap.m.MessageToast.show("Task created successfully!");
+                    this._pCreateTaskDialog.then(function(d) { d.close(); });
+                    
+                    // REFRESH GANTT CHART
+                    this._loadDataAndBuildTree();
+
+                }.bind(this)).catch(function(oError) {
+                    sap.m.MessageBox.error("Creation failed: " + oError.message);
+                });
+
+            } catch (e) {
+                sap.m.MessageBox.error("Error: " + e.message);
+            }
+        },
+
+        onCancelCreateTask: function() {
+            this._pCreateTaskDialog.then(function(d) { d.close(); });
+        },
+
+        onDeleteTask: function() {
+            var oView = this.getView();
+            var oGanttChart = this.byId("ganttChart");
+            var oGanttTable = oGanttChart.getTable();
+            var aSelectedIndices = oGanttTable.getSelectedIndices();
+
+            // 1. Validation
+            if (aSelectedIndices.length === 0) {
+                sap.m.MessageToast.show("Please select a task to delete.");
+                return;
+            }
+
+            var oContext = oGanttTable.getContextByIndex(aSelectedIndices[0]);
+            var oSelectedNode = oContext.getObject();
+
+            if (oSelectedNode.type === "Project") {
+                sap.m.MessageBox.error("You cannot delete a whole Project from here. Please select a Task.");
+                return;
+            }
+
+            // 2. Confirmation & Deletion
+            sap.m.MessageBox.confirm("Are you sure you want to delete '" + oSelectedNode.title + "'?", {
+                onClose: function(sAction) {
+                    if (sAction === "OK") {
+                        
+                        // --- PREPARE BACKEND OPERATION ---
+                        var oODataModel = this.getOwnerComponent().getModel();
+                        var sPath = "/Tasks(" + oSelectedNode.ID + ")";
+                        
+                        // Create a binding to the specific entity
+                        var oContextBinding = oODataModel.bindContext(sPath);
+
+                        // --- FIX: INITIALIZE & DELETE ---
+                        oContextBinding.requestObject().then(function() {
+                            
+                            // 1. Get the actual "Bound Context" object
+                            var oBoundContext = oContextBinding.getBoundContext();
+                            
+                            // 2. Delete using the CONTEXT object (not the binding)
+                            return oBoundContext.delete();
+
+                        }).then(function() {
+                            sap.m.MessageToast.show("Task deleted successfully.");
+                            
+                            // 3. Refresh Gantt Chart
+                            this._loadDataAndBuildTree();
+
+                        }.bind(this)).catch(function(oError) {
+                            // Robust Error Handling
+                            var sMsg = oError.message || "Unknown error";
+                            if (oError.response) { sMsg = "Server Error"; } 
+                            sap.m.MessageBox.error("Delete failed: " + sMsg);
+                        });
+                    }
+                }.bind(this)
             });
         },
     });

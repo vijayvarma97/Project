@@ -20,10 +20,30 @@
                     <Label text="Visualize project timelines, tasks, and milestones."/>
                 </f:expandedContent>
                 <f:actions>
-                    <Button text="Assign Resource" icon="sap-icon://add-contact" type="Emphasized" press="onOpenResourceFinder"/>
-                    <Button icon="sap-icon://refresh" tooltip="Refresh Data" press="onInit"/>
+                    <Button 
+                        text="Create Task" 
+                        icon="sap-icon://add" 
+                        press="onCreateTask"/>
+
+                    <Button 
+                        text="Delete Task" 
+                        icon="sap-icon://delete" 
+                        type="Reject" 
+                        press="onDeleteTask"/>
+
+                    <Button 
+                        text="Assign Resource" 
+                        icon="sap-icon://add-contact" 
+                        type="Emphasized" 
+                        press="onOpenResourceFinder"/>
+                        
+                    <Button 
+                        icon="sap-icon://refresh" 
+                        tooltip="Refresh Data" 
+                        press="onInit"/>
                 </f:actions>
             </f:DynamicPageTitle>
+            
         </f:title>
 
         <f:content>
@@ -82,7 +102,7 @@
                                             </t:template>
                                         </t:Column>
                                     </t:columns>
-
+                                    
                                     <t:rowSettingsTemplate>
                                         <gantt:GanttRowSettings id="ganttRowSettings">
                                             <gantt:shapes1>
