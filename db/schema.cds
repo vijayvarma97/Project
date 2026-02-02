@@ -81,27 +81,35 @@ entity HierarchyNodes as
     // PART 1: Projects (The Roots)
     select from Projects {
         key ID,
-        null as parent_ID : UUID,      // Root nodes have no parent
+        null as parent_ID : UUID,
         title,
-        // CASTING REQUIRED: Convert Date to DateTime to match Tasks
         cast(startDate as DateTime) as startDate, 
         cast(endDate as DateTime) as endDate,
         status as statusOrProgress,
         'Project' as type : String(10),
+        
+        // --- ADD THIS LINE ---
+        false as isMilestone : Boolean, 
+        // ---------------------
+
         ID as project_ID,
-        0 as drillState : String // Placeholder for UI5 OData V4
+        0 as drillState : String
     }
     union all
     // PART 2: Tasks (The Children)
     select from Tasks {
         key ID,
-        // Link to Parent Task if exists, otherwise link to Project
         coalesce(parent.ID, project.ID) as parent_ID : UUID,
         title,
         startDate,
         endDate,
         cast(progress as String) as statusOrProgress,
         'Task' as type : String(10),
+        
+        // --- ADD THIS LINE ---
+        isMilestone, 
+        // ---------------------
+
         project.ID as project_ID,
-        'expanded' as drillState : String // Placeholder
+        'expanded' as drillState : String
     };

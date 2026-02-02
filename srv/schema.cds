@@ -5,6 +5,14 @@ service ProjectService {
     entity Tasks as projection on db.Tasks;
     entity Projects as projection on db.Projects;
 
+    // --- ADD THESE LINES ---
+    // Expose Employees so the Resource Dialog can list them
+    entity Employees as projection on db.Employees;
+
+    // Expose TaskAllocations so the "Assign" button can save data
+    entity TaskAllocations as projection on db.TaskAllocations;
+    // -----------------------
+
     // Expose the fixed Hierarchy View
     entity HierarchyNodes as projection on db.HierarchyNodes;
 

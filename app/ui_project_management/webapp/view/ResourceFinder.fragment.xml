@@ -1,51 +1,40 @@
-<core:FragmentDefinition 
-    xmlns="sap.m" 
-    xmlns:core="sap.ui.core" 
-    xmlns:fb="sap.ui.comp.filterbar">
-    
-    <Dialog title="Resource Finder" contentWidth="60%" stretch="{device>/system/phone}">
-        <content>
-            <VBox class="sapUiSmallMargin">
-                
-                <fb:FilterBar id="resourceFilterBar" search="onSearchResources" showRestoreButton="false" showClearButton="true">
-                    <fb:filterGroupItems>
-                        <fb:FilterGroupItem groupName="G1" name="Skill" label="Required Skill / Role" visibleInFilterBar="true">
-                            <fb:control>
-                                <ComboBox id="skillFilter" items="{/Employees}">
-                                    <core:Item key="{jobTitle}" text="{jobTitle}"/>
-                                </ComboBox>
-                            </fb:control>
-                        </fb:FilterGroupItem>
-                    </fb:filterGroupItems>
-                </fb:FilterBar>
-
-                <Table id="employeeTable" items="{path: '/Employees'}" mode="SingleSelectLeft">
-                    <columns>
-                        <Column><Text text="Employee"/></Column>
-                        <Column><Text text="Role"/></Column>
-                        <Column><Text text="Daily Capacity"/></Column>
-                        <Column hAlign="Center"><Text text="Availability (Heatmap)"/></Column>
-                    </columns>
-                    <items>
-                        <ColumnListItem>
-                            <cells>
-                                <ObjectIdentifier title="{firstName} {lastName}" text="{email}"/>
-                                <Text text="{jobTitle}"/>
-                                <Text text="{dailyCapacity} hrs"/>
-                                
-                                <ObjectStatus 
-                                    text="{path: 'dailyCapacity', formatter: '.formatter.availabilityText'}" 
-                                    state="{path: 'dailyCapacity', formatter: '.formatter.availabilityState'}" 
-                                    icon="{path: 'dailyCapacity', formatter: '.formatter.availabilityIcon'}" />
-                            </cells>
-                        </ColumnListItem>
-                    </items>
-                </Table>
-            </VBox>
-        </content>
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog title="Assign Resource" contentWidth="600px" class="sapUiContentPadding">
         
+        <subHeader>
+            <Toolbar>
+                <SearchField id="skillFilter" placeholder="Search by Skill (e.g. Java, ABAP)" search="onSearchResources" width="100%"/>
+            </Toolbar>
+        </subHeader>
+
+        <Table id="employeeTable" items="{staff>/}" mode="SingleSelectLeft">
+            <columns>
+                <Column><Text text="Employee"/></Column>
+                <Column><Text text="Role"/></Column>
+                <Column hAlign="Center"><Text text="Availability (Daily)"/></Column>
+            </columns>
+            <items>
+                <ColumnListItem>
+                    <cells>
+                        <ObjectIdentifier 
+                            title="{staff>firstName} {staff>lastName}" 
+                            text="{staff>email}"/>
+                        
+                        <Text text="{staff>jobTitle}"/>
+                        
+                        <ObjectStatus 
+                            text="{path: 'staff>dailyCapacity', formatter: '.formatter.availabilityText'}" 
+                            state="{path: 'staff>dailyCapacity', formatter: '.formatter.availabilityState'}"
+                            icon="{path: 'staff>dailyCapacity', formatter: '.formatter.availabilityIcon'}"/>
+                    </cells>
+                </ColumnListItem>
+            </items>
+        </Table>
+
         <beginButton>
-            <Button text="Assign Selected" type="Emphasized" press="onAssignEmployee"/>
+            <Button text="Assign" type="Emphasized" press="onAssignEmployee"/>
         </beginButton>
         <endButton>
             <Button text="Cancel" press="onCloseResourceFinder"/>
