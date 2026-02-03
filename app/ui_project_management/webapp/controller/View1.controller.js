@@ -266,43 +266,54 @@ sap.ui.define([
             var oEmployeeTable = this.byId("employeeTable");
             var oSelectedItem = oEmployeeTable.getSelectedItem();
 
-            // 1. Check if an Employee is selected
+            // 1. Validation
             if (!oSelectedItem) {
-                MessageToast.show("Please select an employee from the list.");
+                sap.m.MessageToast.show("Please select an employee from the list.");
                 return;
             }
 
-            // Fix: Pass "staff" because that is the name of the model used in the Dialog
+            // 2. Get Data
             var oEmployee = oSelectedItem.getBindingContext("staff").getObject();
-            var oTask = this._oSelectedTask; // Retrieved from the previous step
+            var oTask = this._oSelectedTask; 
 
-            // 2. Prepare the OData Model
+            // --- DATE FIX: Format to "yyyy-MM-dd" string ---
+            // This prevents the "400 Bad Request" error
+            var oFormat = DateFormat.getInstance({ pattern: "yyyy-MM-dd" });
+            var sStartDate = oFormat.format(oTask.startDate);
+            var sEndDate = oFormat.format(oTask.endDate);
+            // -----------------------------------------------
+
+            // 3. Prepare Backend Call
             var oModel = this.getOwnerComponent().getModel();
             var oListBinding = oModel.bindList("/TaskAllocations");
 
-            // 3. Create the Record (REAL DATABASE WRITE)
-            // Note: assignedHours defaults to 8, status defaults to 'Proposed'
             try {
-                oListBinding.create({
+                // 4. Create Record
+                var oContext = oListBinding.create({
                     task_ID: oTask.ID,
                     employee_ID: oEmployee.ID,
                     assignedHours: 8,
-                    startDate: oTask.startDate, // Auto-fill start date from Task
-                    endDate: oTask.endDate,     // Auto-fill end date from Task
+                    startDate: sStartDate, // Sending String "2026-02-03"
+                    endDate: sEndDate,     // Sending String "2026-02-10"
                     status: "Proposed"
                 });
 
-                // 4. Success Handling
-                // In OData V4, the batch is sent automatically. We assume success if no error is thrown immediately.
-                MessageToast.show("Resource " + oEmployee.firstName + " assigned to " + oTask.title);
-                this.onCloseResourceFinder();
+                // 5. Success/Error Handling via Promise
+                oContext.created().then(function() {
+                    sap.m.MessageToast.show("Resource " + oEmployee.firstName + " assigned successfully.");
+                    this.onCloseResourceFinder();
+                    
+                    // Clear selection
+                    oEmployeeTable.removeSelections(true);
 
-                // Optional: Clear selection
-                oEmployeeTable.removeSelections(true);
+                }.bind(this)).catch(function(oError) {
+                    // This handles the server error if something else goes wrong
+                    sap.m.MessageBox.error("Assignment Failed: " + oError.message);
+                });
 
             } catch (error) {
-                console.error("Assignment Failed:", error);
-                MessageToast.show("Failed to assign resource.");
+                console.error("Local Error:", error);
+                sap.m.MessageBox.error("System Error: " + error.message);
             }
         },
 
